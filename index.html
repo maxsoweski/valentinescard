@@ -13,8 +13,9 @@
     html { zoom: 2.5; }
   }
 
-  /* Mobile: image bleeds beyond screen — no containers clip it */
+  /* Mobile: nothing clips the image — only the screen itself */
   @media (max-width: 499px) {
+    html, body { overflow: visible; }
     #card { padding: 0; overflow: visible; }
     #portrait-wrap {
       max-width: none;
