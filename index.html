@@ -13,13 +13,12 @@
     html { zoom: 2.5; }
   }
 
-  /* Mobile: image extends beyond screen — viewport IS the crop */
+  /* Mobile: image fills screen width with dithered frame */
   @media (max-width: 499px) {
     #card { padding: 0; }
     #portrait-wrap {
       max-width: none;
       width: 100vw;
-      overflow: visible;
     }
     #dither-canvas {
       max-width: none !important;
@@ -749,9 +748,22 @@ function startCard() {
     img.onload = () => {
       const canvas = document.getElementById('dither-canvas');
       const ctx = canvas.getContext('2d');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
+      const isMobile = window.innerWidth < 500;
+
+      if (isMobile) {
+        // Crop into JT's face — show the good stuff, ear at right edge
+        const sx = Math.round(img.width * 0.07);
+        const sy = Math.round(img.height * 0.07);
+        const sw = Math.round(img.width * 0.58);
+        const sh = Math.round(img.height * 0.85);
+        canvas.width = sw;
+        canvas.height = sh;
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+      } else {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+      }
       // Recolor: white pixels → light pink, black pixels → dark background
       const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const d = imgData.data;
@@ -795,23 +807,12 @@ function startCard() {
       }
       ctx.putImageData(imgData2, 0, 0);
 
-      const aspect = img.height / img.width;
-      const isMobile = window.innerWidth < 500;
+      const aspect = canvas.height / canvas.width;
       if (isMobile) {
-        // Zoom into JT's face — viewport is the crop window
-        // JT's ear is at ~65% of image width — that's our right edge
+        // Fill viewport width — edge fade + glow create the frame
         const viewW = window.innerWidth;
-        const cropScale = 1.75; // zoom factor vs viewport width
-        const canvasW = viewW * cropScale;
-        const canvasH = canvasW * aspect;
-        canvas.style.width = canvasW + 'px';
-        canvas.style.height = canvasH + 'px';
-        // Position so right edge of viewport = ~65% of image
-        const rightCropPct = 0.65;
-        const offsetX = rightCropPct * canvasW - viewW;
-        canvas.style.marginLeft = -offsetX + 'px';
-        // Shift up slightly to favor face over chest
-        canvas.style.marginTop = -(canvasH * 0.08) + 'px';
+        canvas.style.width = viewW + 'px';
+        canvas.style.height = (viewW * aspect) + 'px';
       } else {
         const displayW = Math.min(340, window.innerWidth - 40);
         canvas.style.width = displayW + 'px';
