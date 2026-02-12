@@ -754,7 +754,7 @@ function startCard() {
 
       // Dithered edge fade — dissolve to transparent so glow follows the shape
       // Asymmetric fade: right side matches bottom (shorter fade)
-      const fadeTop = 30, fadeLeft = 30, fadeRight = 10, fadeBottom = 10;
+      const fadeTop = 30, fadeLeft = 30, fadeRight = 30, fadeBottom = 30;
       const imgData2 = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const d2 = imgData2.data;
       const w = canvas.width, h = canvas.height;
