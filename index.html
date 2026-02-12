@@ -19,7 +19,16 @@
     #portrait-wrap {
       transform: scale(2) translate(22px, -7px);
     }
-    #msg-cycle { display: none; }
+    #msg-cycle {
+      position: absolute;
+      left: 10px;
+      top: 110px;
+      width: 55px;
+      font-size: 4.5px;
+      line-height: 1.8;
+      text-align: left;
+      margin-top: 0;
+    }
   }
 
   body {
@@ -823,7 +832,15 @@ function startCard() {
   setTimeout(startHearts, 1000);
 
   // Message cycle — loop 3 phrases with variable timing
-  var messages = [
+  var mobileMode = window.innerWidth < 500;
+  var messages = mobileMode ? [
+    { text: 'Happy',            hold: 2500 },
+    { text: 'Valentine\'s Day', hold: 4000 },
+    { text: 'just let me',      hold: 3000 },
+    { text: 'rock you',         hold: 3000 },
+    { text: "'til the break",   hold: 3000 },
+    { text: 'of day',           hold: 3000 },
+  ] : [
     { text: 'Happy Valentine\'s Day', hold: 8000 },
     { text: 'just let me rock you',   hold: 5000 },
     { text: "'til the break of day",  hold: 5000 },
