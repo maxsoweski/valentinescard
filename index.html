@@ -13,21 +13,6 @@
     html { zoom: 2.5; }
   }
 
-  /* Mobile: nothing clips the image — only the screen itself */
-  @media (max-width: 499px) {
-    html, body { overflow: visible; }
-    #card { padding: 0; overflow: visible; }
-    #portrait-wrap {
-      max-width: none;
-      overflow: visible;
-    }
-    #dither-canvas {
-      max-width: none !important;
-      max-height: none !important;
-    }
-    #msg-cycle { display: none; }
-  }
-
   body {
     background: #0a0008;
     color: #ff69b4;
@@ -795,25 +780,10 @@ function startCard() {
       }
       ctx.putImageData(imgData2, 0, 0);
 
-      const aspect = canvas.height / canvas.width;
-      const isMobile = window.innerWidth < 500;
-      if (isMobile) {
-        // Scale up big — let it extend beyond the screen naturally
-        const viewW = window.innerWidth;
-        const scale = 1.75;
-        const dispW = viewW * scale;
-        const dispH = dispW * aspect;
-        canvas.style.width = dispW + 'px';
-        canvas.style.height = dispH + 'px';
-        // Position: right screen edge at ~65% of image (JT's ear)
-        const offsetX = 0.65 * dispW - viewW;
-        canvas.style.marginLeft = -offsetX + 'px';
-        canvas.style.marginTop = -(dispH * 0.08) + 'px';
-      } else {
-        const displayW = Math.min(340, window.innerWidth - 40);
-        canvas.style.width = displayW + 'px';
-        canvas.style.height = (displayW * aspect) + 'px';
-      }
+      const aspect = img.height / img.width;
+      const displayW = Math.min(340, window.innerWidth - 40);
+      canvas.style.width = displayW + 'px';
+      canvas.style.height = (displayW * aspect) + 'px';
     };
     img.src = CONFIG.imageDataUrl;
   } else {
