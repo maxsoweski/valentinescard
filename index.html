@@ -13,12 +13,12 @@
     html { zoom: 2.5; }
   }
 
-  /* Mobile: image fills screen width with dithered frame */
+  /* Mobile: image bleeds beyond screen — no containers clip it */
   @media (max-width: 499px) {
-    #card { padding: 0; }
+    #card { padding: 0; overflow: visible; }
     #portrait-wrap {
       max-width: none;
-      width: 100vw;
+      overflow: visible;
     }
     #dither-canvas {
       max-width: none !important;
@@ -748,22 +748,9 @@ function startCard() {
     img.onload = () => {
       const canvas = document.getElementById('dither-canvas');
       const ctx = canvas.getContext('2d');
-      const isMobile = window.innerWidth < 500;
-
-      if (isMobile) {
-        // Crop into JT's face — show the good stuff, ear at right edge
-        const sx = Math.round(img.width * 0.07);
-        const sy = Math.round(img.height * 0.07);
-        const sw = Math.round(img.width * 0.58);
-        const sh = Math.round(img.height * 0.85);
-        canvas.width = sw;
-        canvas.height = sh;
-        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-      } else {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
-      }
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
       // Recolor: white pixels → light pink, black pixels → dark background
       const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const d = imgData.data;
@@ -781,9 +768,7 @@ function startCard() {
 
       // Dithered edge fade — dissolve to transparent so glow follows the shape
       // Asymmetric fade: right side matches bottom (shorter fade)
-      const fadeTop = 30, fadeLeft = 30;
-      const fadeRight = isMobile ? 30 : 10;
-      const fadeBottom = isMobile ? 30 : 10;
+      const fadeTop = 30, fadeLeft = 30, fadeRight = 10, fadeBottom = 10;
       const imgData2 = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const d2 = imgData2.data;
       const w = canvas.width, h = canvas.height;
@@ -810,11 +795,19 @@ function startCard() {
       ctx.putImageData(imgData2, 0, 0);
 
       const aspect = canvas.height / canvas.width;
+      const isMobile = window.innerWidth < 500;
       if (isMobile) {
-        // Fill viewport width — edge fade + glow create the frame
+        // Scale up big — let it extend beyond the screen naturally
         const viewW = window.innerWidth;
-        canvas.style.width = viewW + 'px';
-        canvas.style.height = (viewW * aspect) + 'px';
+        const scale = 1.75;
+        const dispW = viewW * scale;
+        const dispH = dispW * aspect;
+        canvas.style.width = dispW + 'px';
+        canvas.style.height = dispH + 'px';
+        // Position: right screen edge at ~65% of image (JT's ear)
+        const offsetX = 0.65 * dispW - viewW;
+        canvas.style.marginLeft = -offsetX + 'px';
+        canvas.style.marginTop = -(dispH * 0.08) + 'px';
       } else {
         const displayW = Math.min(340, window.innerWidth - 40);
         canvas.style.width = displayW + 'px';
