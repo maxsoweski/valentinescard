@@ -13,6 +13,15 @@
     html { zoom: 2.5; }
   }
 
+  /* Mobile: scale up the portrait via CSS transform — image rendering untouched */
+  @media (max-width: 499px) {
+    #card { overflow: hidden; }
+    #portrait-wrap {
+      transform: scale(2) translate(22px, -7px);
+    }
+    #msg-cycle { display: none; }
+  }
+
   body {
     background: #0a0008;
     color: #ff69b4;
