@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=160, user-scalable=no">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<title>Happy Valentine's Day</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* Desktop auto-zoom — mobile gets zoom from viewport meta instead */
+  @media (min-width: 500px) {
+    html { zoom: 2.5; }
+  }
+
+  body {
+    background: #0a0008;
+    color: #ff69b4;
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    overflow: hidden;
+    width: 100vw;
+    height: 100dvh;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* --- SCANLINE OVERLAY --- */
+  .scanlines {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.15) 0px,
+      rgba(0,0,0,0.15) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  /* --- START SCREEN --- */
+  #start-screen {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    cursor: pointer;
+    background: #0a0008;
+  }
+
+  .pixel-heart {
+    width: 240px;
+    height: 240px;
+    position: relative;
+    animation: heartPulse 1.2s ease-in-out infinite;
+    image-rendering: pixelated;
+  }
+
+  @keyframes heartPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+  }
+
+  .start-text {
+    margin-top: 30px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    animation: blink 1.5s step-end infinite;
+    color: #ff69b4;
+    text-align: center;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* --- MAIN CARD --- */
+  #card {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: safe center;
+    opacity: 0;
+    transition: opacity 1s ease-in;
+    padding: 30px 20px;
+    overflow-y: auto;
+  }
+
+  #card.visible { opacity: 1; }
+
+  #portrait-wrap {
+    position: relative;
+    overflow: hidden;
+    max-width: 340px;
+    width: 100%;
+  }
+
+  #hearts-layer {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    /* Mask hides hearts over JT's face — soft fade from hidden to visible */
+    -webkit-mask-image: radial-gradient(ellipse 22% 28% at 47% 33%, transparent 55%, black 100%);
+    mask-image: radial-gradient(ellipse 22% 28% at 47% 33%, transparent 55%, black 100%);
+  }
+
+  #dither-canvas {
+    border: none;
+    image-rendering: pixelated;
+    max-width: 340px;
+    max-height: 400px;
+    width: 100%;
+    height: auto;
+    cursor: pointer;
+    filter: drop-shadow(0 0 15px rgba(255, 20, 147, 0.4));
+    animation: imgGlow 3s ease-in-out infinite;
+  }
+
+  @keyframes imgGlow {
+    0%, 100% { filter: drop-shadow(0 0 15px rgba(255, 20, 147, 0.4)); }
+    50% { filter: drop-shadow(0 0 25px rgba(255, 20, 147, 0.7)); }
+  }
+
+  .message {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 16px;
+    line-height: 1.6;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+    text-shadow: 0 0 10px rgba(255, 105, 180, 0.5);
+  }
+
+  .message.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  #msg-cycle {
+    font-size: 11px;
+    color: #ff1493;
+    line-height: 2.2;
+    transition: opacity 1s ease;
+  }
+
+  /* --- FLOATING HEARTS (masked to portrait pink areas via blend mode) --- */
+  .float-heart {
+    position: absolute;
+    bottom: -14px;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10;
+    mix-blend-mode: darken;
+    animation: floatUp linear forwards;
+  }
+
+  @keyframes floatUpLeft {
+    0% { opacity: 1; transform: translate(0, 0); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-40px, -450px); }
+  }
+  @keyframes floatUpRight {
+    0% { opacity: 1; transform: translate(0, 0); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translate(40px, -450px); }
+  }
+
+
+  /* --- IMAGE DROP ZONE (dev mode) --- */
+  #drop-zone {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
+    display: none;
+  }
+  #drop-zone.dev { display: block; }
+  #file-input { display: none; }
+  #drop-label {
+    display: inline-block;
+    padding: 10px 20px;
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    font-size: 14px;
+    color: #ff69b4;
+    background: rgba(255, 20, 147, 0.15);
+    border: 1px solid #ff1493;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 1px;
+  }
+  #drop-label:active { background: rgba(255, 20, 147, 0.3); }
+</style>
+</head>
+<body>
+
+<div class="scanlines"></div>
+
+<!-- START SCREEN -->
+<div id="start-screen">
+  <canvas class="pixel-heart" id="heart-canvas" width="300" height="300"></canvas>
+  <div class="start-text">dance with me</div>
+</div>
+
+<!-- MAIN CARD -->
+<div id="card">
+  <div id="portrait-wrap">
+    <canvas id="dither-canvas" width="200" height="200"></canvas>
+    <div id="hearts-layer"></div>
+  </div>
+  <div id="msg-cycle" class="message"></div>
+</div>
+
+
+<!-- Dev: click to load custom image -->
+<div id="drop-zone">
+  <span id="drop-label">[click to load JT photo]</span>
+  <input type="file" id="file-input" accept="image/*">
+</div>
+
+<script>
+// ============================================================
+// CONFIGURATION
+// ============================================================
+const CONFIG = {
+  // Set to true to show the image picker for testing
+  devMode: false,
+
+  // Paste a base64 data URL here for the final version:
+  imageDataUrl: 'data:image/png;base64,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',
+
+  // Dither settings
+  ditherPaletteColors: [
+    [10, 0, 8],       // near-black
+    [60, 10, 40],     // dark purple
+    [153, 51, 102],   // muted pink
+    [255, 20, 147],   // deep pink
+    [255, 105, 180],  // hot pink
+    [255, 182, 213],  // light pink
+    [255, 240, 245],  // lavender blush
+  ],
+
+  // Dither resolution (lower = more chunky/pixelated)
+  ditherWidth: 300,
+
+  // Message timing (seconds after music starts)
+  titleDelay: 5,
+  punchlineDelay: 14,
+  creditDelay: 20,
+};
+
+// ============================================================
+// PIXEL HEART on start screen
+// ============================================================
+function bayerDitherRegion(ctx, tmpCanvas, color, density) {
+  // Apply Bayer 4x4 ordered dither at 3x pixel scale to white regions of tmpCanvas
+  const w = tmpCanvas.width, h = tmpCanvas.height;
+  const tc = tmpCanvas.getContext('2d');
+  const srcData = tc.getImageData(0, 0, w, h).data;
+  const bayer4 = [
+    [0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]
+  ];
+  const ps = 3; // pixel scale
+  ctx.fillStyle = color;
+  for (let y = 0; y < h; y += ps) {
+    for (let x = 0; x < w; x += ps) {
+      const i = (y * w + x) * 4;
+      if (srcData[i] > 128) {
+        const bx = Math.floor(x / ps) % 4;
+        const by = Math.floor(y / ps) % 4;
+        const threshold = bayer4[by][bx] / 16;
+        if (density > threshold) {
+          ctx.fillRect(x, y, ps, ps);
+        }
+      }
+    }
+  }
+}
+
+function drawPixelHeart(canvas) {
+  const ctx = canvas.getContext('2d');
+  const w = 300, h = 300;
+
+  // Draw heart shape on temp canvas
+  const tmp = document.createElement('canvas');
+  tmp.width = w; tmp.height = h;
+  const tc = tmp.getContext('2d');
+  const cx = 150, cy = 130, size = 110;
+  tc.beginPath();
+  tc.moveTo(cx, cy + size * 0.3);
+  tc.bezierCurveTo(cx, cy - size * 0.3, cx - size, cy - size * 0.3, cx - size, cy + size * 0.1);
+  tc.bezierCurveTo(cx - size, cy + size * 0.6, cx, cy + size * 0.8, cx, cy + size);
+  tc.bezierCurveTo(cx, cy + size * 0.8, cx + size, cy + size * 0.6, cx + size, cy + size * 0.1);
+  tc.bezierCurveTo(cx + size, cy - size * 0.3, cx, cy - size * 0.3, cx, cy + size * 0.3);
+  tc.fillStyle = '#fff';
+  tc.fill();
+
+  // Bayer dither at 3x pixel scale
+  bayerDitherRegion(ctx, tmp, '#ff1493', 0.5);
+}
+
+// ============================================================
+// FLOYD-STEINBERG DITHERING
+// ============================================================
+function closestPaletteColor(r, g, b, palette) {
+  let minDist = Infinity, best = palette[0];
+  for (const c of palette) {
+    const dr = r - c[0], dg = g - c[1], db = b - c[2];
+    const d = dr*dr + dg*dg + db*db;
+    if (d < minDist) { minDist = d; best = c; }
+  }
+  return best;
+}
+
+function floydSteinberg(imageData, width, height, palette) {
+  const data = imageData.data;
+  const idx = (x, y) => (y * width + x) * 4;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = idx(x, y);
+      const oldR = data[i], oldG = data[i+1], oldB = data[i+2];
+      const [newR, newG, newB] = closestPaletteColor(oldR, oldG, oldB, palette);
+      data[i] = newR; data[i+1] = newG; data[i+2] = newB;
+
+      const errR = oldR - newR, errG = oldG - newG, errB = oldB - newB;
+
+      const spread = (dx, dy, factor) => {
+        const nx = x + dx, ny = y + dy;
+        if (nx >= 0 && nx < width && ny < height) {
+          const j = idx(nx, ny);
+          data[j]   += errR * factor;
+          data[j+1] += errG * factor;
+          data[j+2] += errB * factor;
+        }
+      };
+
+      spread(1, 0, 7/16);
+      spread(-1, 1, 3/16);
+      spread(0, 1, 5/16);
+      spread(1, 1, 1/16);
+    }
+  }
+  return imageData;
+}
+
+function ditherImage(sourceImg) {
+  const canvas = document.getElementById('dither-canvas');
+  const ctx = canvas.getContext('2d');
+
+  // Scale to dither resolution maintaining aspect ratio
+  const aspect = sourceImg.height / sourceImg.width;
+  const w = CONFIG.ditherWidth;
+  const h = Math.round(w * aspect);
+
+  canvas.width = w;
+  canvas.height = h;
+
+  ctx.drawImage(sourceImg, 0, 0, w, h);
+  const imgData = ctx.getImageData(0, 0, w, h);
+  floydSteinberg(imgData, w, h, CONFIG.ditherPaletteColors);
+  ctx.putImageData(imgData, 0, 0);
+
+  // Scale up display size for crispy pixels
+  const displayW = Math.min(280, window.innerWidth - 40);
+  canvas.style.width = displayW + 'px';
+  canvas.style.height = (displayW * aspect) + 'px';
+}
+
+// ============================================================
+// PLACEHOLDER: Draw a simple pixel-art figure if no image loaded
+// ============================================================
+function drawPlaceholder() {
+  const canvas = document.getElementById('dither-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 120;
+  canvas.height = 120;
+  canvas.style.width = '240px';
+  canvas.style.height = '240px';
+
+  ctx.fillStyle = '#0a0008';
+  ctx.fillRect(0, 0, 120, 120);
+
+  const s = 4; // pixel size
+  ctx.fillStyle = '#ff1493';
+
+  // Simple pixel-art silhouette (head + shoulders + heart)
+  const figure = [
+    // head
+    [12,3],[13,3],[14,3],[15,3],[16,3],[17,3],
+    [11,4],[12,4],[13,4],[14,4],[15,4],[16,4],[17,4],[18,4],
+    [11,5],[12,5],[13,5],[14,5],[15,5],[16,5],[17,5],[18,5],
+    [11,6],[12,6],[13,6],[14,6],[15,6],[16,6],[17,6],[18,6],
+    [12,7],[13,7],[14,7],[15,7],[16,7],[17,7],
+    // neck
+    [14,8],[15,8],
+    // shoulders
+    [8,9],[9,9],[10,9],[11,9],[12,9],[13,9],[14,9],[15,9],[16,9],[17,9],[18,9],[19,9],[20,9],[21,9],
+    [7,10],[8,10],[9,10],[10,10],[11,10],[12,10],[13,10],[14,10],[15,10],[16,10],[17,10],[18,10],[19,10],[20,10],[21,10],[22,10],
+    [6,11],[7,11],[8,11],[9,11],[10,11],[11,11],[12,11],[13,11],[14,11],[15,11],[16,11],[17,11],[18,11],[19,11],[20,11],[21,11],[22,11],[23,11],
+    // torso
+    [9,12],[10,12],[11,12],[12,12],[13,12],[14,12],[15,12],[16,12],[17,12],[18,12],[19,12],[20,12],
+    [9,13],[10,13],[11,13],[12,13],[13,13],[14,13],[15,13],[16,13],[17,13],[18,13],[19,13],[20,13],
+  ];
+
+  // Draw in hot pink
+  figure.forEach(([x,y]) => ctx.fillRect(x*s, y*s, s, s));
+
+  // Add a small heart on the chest in lighter pink
+  ctx.fillStyle = '#ff69b4';
+  const heart = [
+    [13,11],[14,11],[16,11],[17,11],
+    [13,12],[14,12],[15,12],[16,12],[17,12],
+    [14,13],[15,13],[16,13],
+    [15,14],
+  ];
+  // Nah, keep it simple — the silhouette is just a placeholder
+
+  // Text below
+  ctx.fillStyle = '#ff69b4';
+  ctx.font = '10px Courier New';
+  ctx.textAlign = 'center';
+  ctx.fillText('TAP HERE', 60, 100);
+  ctx.fillText('to load photo', 60, 112);
+}
+
+// ============================================================
+// CHIPTUNE SYNTHESIZER — "Rock Your Body" approximation
+// ============================================================
+let audioCtx, masterGain, isPlaying = false, isMuted = false;
+
+// Note frequencies
+const NOTES = {
+  'C3': 130.81, 'Db3': 138.59, 'D3': 146.83, 'Eb3': 155.56, 'E3': 164.81,
+  'F3': 174.61, 'Gb3': 185.00, 'G3': 196.00, 'Ab3': 207.65, 'A3': 220.00,
+  'Bb3': 233.08, 'B3': 246.94,
+  'C4': 261.63, 'Db4': 277.18, 'D4': 293.66, 'Eb4': 311.13, 'E4': 329.63,
+  'F4': 349.23, 'Gb4': 369.99, 'G4': 392.00, 'Ab4': 415.30, 'A4': 440.00,
+  'Bb4': 466.16, 'B4': 493.88,
+  'C5': 523.25, 'Db5': 554.37, 'D5': 587.33, 'Eb5': 622.25, 'E5': 659.25,
+  'F5': 698.46, 'Gb5': 739.99, 'G5': 783.99, 'Ab5': 830.61,
+};
+
+const BPM = 104;
+const STEP = 60 / BPM / 4; // 16th note duration
+
+function createOsc(type, freq, gain, start, dur, vibratoAmt = 0) {
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  g.gain.value = 0;
+  g.gain.setValueAtTime(0, start);
+  g.gain.linearRampToValueAtTime(gain, start + 0.01);
+  g.gain.setValueAtTime(gain, start + dur - 0.02);
+  g.gain.linearRampToValueAtTime(0, start + dur);
+  osc.connect(g);
+  g.connect(masterGain);
+  osc.start(start);
+  osc.stop(start + dur + 0.05);
+
+  if (vibratoAmt) {
+    const lfo = audioCtx.createOscillator();
+    const lfoGain = audioCtx.createGain();
+    lfo.frequency.value = 5;
+    lfoGain.gain.value = vibratoAmt;
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+    lfo.start(start);
+    lfo.stop(start + dur + 0.05);
+  }
+}
+
+function createNoise(start, dur, gain, highpass = 8000) {
+  const bufferSize = audioCtx.sampleRate * dur;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buffer;
+
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'highpass';
+  filter.frequency.value = highpass;
+
+  const g = audioCtx.createGain();
+  g.gain.value = 0;
+  g.gain.setValueAtTime(gain, start);
+  g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+
+  noise.connect(filter);
+  filter.connect(g);
+  g.connect(masterGain);
+  noise.start(start);
+  noise.stop(start + dur + 0.01);
+}
+
+function playChiptune() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = isMuted ? 0 : 0.3;
+  masterGain.connect(audioCtx.destination);
+
+  const t0 = audioCtx.currentTime + 0.1;
+
+  // "Rock Your Body" — JT / The Neptunes
+  // Key: E minor, BPM 104, 16th note grid
+  // Structure: 4-bar intro riff → 8-bar chorus → loop × 2 → fade
+  // Chorus chords per 2-bar cycle: F/G → am11 → em
+  // Melody from Hooktheory transcription
+
+  const Fch  = ['F4', 'A4', 'C5'];
+  const Gch  = ['G4', 'B4', 'D5'];
+  const Emch = ['E4', 'G4', 'B4'];
+
+  // Staccato chord stab
+  function stab(chord, time, vol, dur) {
+    vol = vol || 0.06;
+    dur = dur || STEP * 0.45;
+    chord.forEach(function(note) {
+      createOsc('square', NOTES[note], vol, time, dur);
+    });
+  }
+
+  // Backing: chord stabs + bass + drums for a 2-bar chunk (32 steps)
+  function playBacking(offset, opts) {
+    opts = opts || {};
+    var sv = opts.quiet ? 0.035 : 0.06;
+    var gv = opts.quiet ? 0.02 : 0.04;
+
+    stab(Fch, offset + 0 * STEP, sv);
+    stab(Fch, offset + 3 * STEP, gv);
+    stab(Fch, offset + 6 * STEP, sv);
+    stab(Gch, offset + 8 * STEP, sv);
+    stab(Gch, offset + 11 * STEP, gv);
+    stab(Gch, offset + 14 * STEP, sv);
+    stab(Emch, offset + 16 * STEP, sv);
+    stab(Emch, offset + 19 * STEP, gv);
+    stab(Emch, offset + 22 * STEP, sv);
+    stab(Emch, offset + 24 * STEP, sv, STEP * 1.2);
+    stab(Emch, offset + 30 * STEP, gv * 0.7);
+
+    createOsc('triangle', NOTES['F3'], 0.20, offset + 0 * STEP, 7 * STEP * 0.8);
+    createOsc('triangle', NOTES['G3'], 0.20, offset + 8 * STEP, 7 * STEP * 0.8);
+    createOsc('triangle', NOTES['E3'], 0.22, offset + 16 * STEP, 14 * STEP * 0.8);
+
+    for (var i = 0; i < 32; i += 2) {
+      createNoise(offset + i * STEP, 0.04, i % 4 === 0 ? 0.07 : 0.03, 9000);
+    }
+    createNoise(offset + 0 * STEP, 0.08, 0.12, 80);
+    createNoise(offset + 8 * STEP, 0.08, 0.10, 80);
+    createNoise(offset + 16 * STEP, 0.08, 0.12, 80);
+    createNoise(offset + 24 * STEP, 0.08, 0.10, 80);
+
+    if (!opts.noSnare) {
+      createNoise(offset + 4 * STEP, 0.06, 0.09, 3000);
+      createNoise(offset + 12 * STEP, 0.06, 0.09, 3000);
+      createNoise(offset + 20 * STEP, 0.06, 0.09, 3000);
+      createNoise(offset + 28 * STEP, 0.06, 0.09, 3000);
+    }
+  }
+
+  // Intro riff: 4 bars (64 steps) — stabs only, no vocal
+  function playIntro(offset) {
+    playBacking(offset, { noSnare: true });
+    playBacking(offset + 32 * STEP);
+  }
+
+  // Chorus: 8 bars (128 steps) — quieter stabs + JT melody
+  // Melody from Hooktheory: mostly B4 (deg 5), dips to A4/F#4/E4,
+  // climbs to D5/E5 in cycles 3-4
+  // Each 2-bar cycle (32 steps): F/G (steps 0-11) → am11 (12-19) → em (20-31)
+  function playChorus(offset) {
+    for (var c = 0; c < 4; c++) {
+      playBacking(offset + c * 32 * STEP, { quiet: true });
+    }
+
+    // JT vocal melody (square wave + slight vibrato)
+    // From Hooktheory grid: block width = duration, grey = rest
+    // 3-note groups use 8th→16th→QUARTER pattern (pop pop HOLD)
+    // Quarter note crosses bar line between m1 and m2
+    function melCycle(offset) {
+      var notes = [
+        // Measure 1
+        [0, 'B4', 2],     // beat 1: 8th  "Don't"
+        [2, 'A4', 2],     //         8th  "be"
+        [4, 'E4', 2],     // beat 2: 8th  "so"
+        [6, 'E4', 2],     //         8th  "quick"
+        // beats 3: quarter rest [grey bar] — pause
+        [12, 'E4', 2],    // beat 4: 8th  "walk"
+        [14, 'E4', 1],    //         16th "a-"
+        [15, 'E4', 4],    //         QTR  "-way" (crosses bar line into m2!)
+        // Measure 2
+        // step 19: 16th rest [grey bar]
+        [20, 'Gb4', 2],   // beat 6: 8th  "dance"
+        [22, 'D4', 1],    //         16th "with"
+        [23, 'D4', 4],    //         QTR  "me" (held)
+        [27, 'E4', 2],    // beat 7+: 8th  (trail)
+        [29, 'E4', 1],    //          16th (trail)
+        [30, 'E4', 2],    //          8th  (trail)
+      ];
+      notes.forEach(function(n) {
+        createOsc('square', NOTES[n[1]], 0.10, offset + n[0] * STEP, n[2] * STEP * 0.8, 2);
+      });
+    }
+
+    melCycle(offset);
+    melCycle(offset + 32 * STEP);
+    melCycle(offset + 64 * STEP);
+    melCycle(offset + 96 * STEP);
+  }
+
+  // ==== SONG STRUCTURE: intro → chorus → intro → chorus (loops forever) ====
+  var pos = t0;
+
+  // Loop 1
+  playIntro(pos);
+  pos += 64 * STEP;
+  playChorus(pos);
+  pos += 128 * STEP;
+
+  // Loop 2
+  playIntro(pos);
+  pos += 64 * STEP;
+  playChorus(pos);
+  pos += 128 * STEP;
+
+  var totalDur = pos - t0;
+  isPlaying = true;
+
+  // Schedule next loop — always restart (mute state handled by masterGain)
+  setTimeout(function() {
+    playChiptune();
+  }, totalDur * 1000);
+
+  return totalDur;
+}
+
+// ============================================================
+// FLOATING HEARTS ANIMATION
+// ============================================================
+function spawnHeart() {
+  const size = 7; // tiny pixel hearts
+  const c = document.createElement('canvas');
+  c.width = size; c.height = 6;
+  c.className = 'float-heart';
+  c.style.left = (10 + Math.random() * 80) + '%';
+  const dur = 5 + Math.random() * 5;
+  c.style.animationDuration = dur + 's';
+  c.style.animationName = Math.random() > 0.5 ? 'floatUpLeft' : 'floatUpRight';
+  c.style.imageRendering = 'pixelated';
+  c.style.width = '14px';
+  c.style.height = '12px';
+
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#000000';
+  // Outline-only heart (edge pixels only)
+  const pattern = [
+    [0,1,1,0,1,1,0],
+    [1,0,0,1,0,0,1],
+    [1,0,0,0,0,0,1],
+    [0,1,0,0,0,1,0],
+    [0,0,1,0,1,0,0],
+    [0,0,0,1,0,0,0],
+  ];
+  pattern.forEach((row, py) => {
+    row.forEach((px, pxx) => {
+      if (px) ctx.fillRect(pxx, py, 1, 1);
+    });
+  });
+
+  var layer = document.getElementById('hearts-layer');
+  if (layer) layer.appendChild(c);
+  setTimeout(() => c.remove(), 12000);
+}
+
+let heartInterval;
+function startHearts() {
+  heartInterval = setInterval(spawnHeart, 600);
+}
+
+// ============================================================
+// IMAGE LOADING
+// ============================================================
+let imageLoaded = false;
+
+function loadImage(src) {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    ditherImage(img);
+    imageLoaded = true;
+  };
+  img.src = src;
+}
+
+// File input handler — canvas click opens file picker
+document.getElementById('file-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => loadImage(ev.target.result);
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('dither-canvas').addEventListener('click', () => {
+  if (CONFIG.devMode) document.getElementById('file-input').click();
+});
+
+// ============================================================
+// MAIN SEQUENCE
+// ============================================================
+function startCard() {
+  document.getElementById('start-screen').style.transition = 'opacity 0.8s ease';
+  document.getElementById('start-screen').style.opacity = '0';
+  setTimeout(() => {
+    document.getElementById('start-screen').style.display = 'none';
+  }, 800);
+
+  // Load image
+  if (CONFIG.imageDataUrl) {
+    // Image is already dithered from the dither app — colorize to match theme
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.getElementById('dither-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      // Recolor: white pixels → light pink, black pixels → dark background
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = imgData.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const brightness = (d[i] + d[i+1] + d[i+2]) / 3;
+        if (brightness > 128) {
+          // White → glowy deep pink (matches border)
+          d[i] = 255; d[i+1] = 20; d[i+2] = 147;
+        } else {
+          // Black → dark background
+          d[i] = 10; d[i+1] = 0; d[i+2] = 8;
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+
+      // Dithered edge fade — dissolve to transparent so glow follows the shape
+      // Asymmetric fade: right side matches bottom (shorter fade)
+      const fadeTop = 30, fadeLeft = 30, fadeRight = 10, fadeBottom = 10;
+      const imgData2 = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d2 = imgData2.data;
+      const w = canvas.width, h = canvas.height;
+      const bayer4 = [
+        [0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]
+      ];
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          // Distance from each edge with different fade widths
+          const distTop = y / fadeTop;
+          const distBot = (h - 1 - y) / fadeBottom;
+          const distLeft = x / fadeLeft;
+          const distRight = (w - 1 - x) / fadeRight;
+          const edgeRatio = Math.min(distTop, distBot, distLeft, distRight);
+          if (edgeRatio < 1) {
+            const threshold = bayer4[y % 4][x % 4] / 16;
+            if (edgeRatio < threshold) {
+              const i = (y * w + x) * 4;
+              d2[i+3] = 0; // transparent
+            }
+          }
+        }
+      }
+      ctx.putImageData(imgData2, 0, 0);
+
+      const aspect = img.height / img.width;
+      const displayW = Math.min(340, window.innerWidth - 40);
+      canvas.style.width = displayW + 'px';
+      canvas.style.height = (displayW * aspect) + 'px';
+    };
+    img.src = CONFIG.imageDataUrl;
+  } else {
+    drawPlaceholder();
+  }
+
+  // Show card
+  setTimeout(() => {
+    document.getElementById('card').classList.add('visible');
+  }, 500);
+
+  // Start music
+  let duration = 30;
+  try { duration = playChiptune(); } catch(e) { console.error('Music error:', e); }
+
+  // Click anywhere to toggle mute
+  document.getElementById('card').addEventListener('click', () => {
+    isMuted = !isMuted;
+    masterGain.gain.value = isMuted ? 0 : 0.3;
+  });
+
+  // Show dev image picker
+  if (CONFIG.devMode) {
+    document.getElementById('drop-zone').classList.add('dev');
+  }
+
+  // Start floating hearts
+  setTimeout(startHearts, 1000);
+
+  // Message cycle — loop 3 phrases with variable timing
+  var messages = [
+    { text: 'Happy Valentine\'s Day', hold: 8000 },
+    { text: 'just let me rock you',   hold: 5000 },
+    { text: "'til the break of day",  hold: 5000 },
+  ];
+  var msgEl = document.getElementById('msg-cycle');
+  var msgIdx = 0;
+
+  function showMessage() {
+    var msg = messages[msgIdx];
+    msgEl.textContent = msg.text;
+    msgEl.style.opacity = '1';
+    // Hold, then fade out, then show next
+    setTimeout(function() {
+      msgEl.style.opacity = '0';
+      setTimeout(function() {
+        msgIdx = (msgIdx + 1) % messages.length;
+        showMessage();
+      }, 1000); // 1s fade-out gap
+    }, msg.hold);
+  }
+
+  // Show first message immediately
+  showMessage();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+drawPixelHeart(document.getElementById('heart-canvas'));
+
+document.getElementById('start-screen').addEventListener('click', startCard, { once: true });
+</script>
+</body>
+</html>
