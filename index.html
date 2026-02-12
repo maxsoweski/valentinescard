@@ -13,17 +13,19 @@
     html { zoom: 2.5; }
   }
 
-  /* Mobile: let portrait fill screen width for zoomed crop */
+  /* Mobile: image extends beyond screen — viewport IS the crop */
   @media (max-width: 499px) {
-    #card { padding: 15px 0; }
+    #card { padding: 0; }
     #portrait-wrap {
       max-width: none;
       width: 100vw;
+      overflow: visible;
     }
     #dither-canvas {
       max-width: none !important;
       max-height: none !important;
     }
+    #msg-cycle { display: none; }
   }
 
   body {
