@@ -836,17 +836,17 @@ function startCard() {
   // Message cycle — loop 3 phrases with variable timing
   var mobileMode = window.innerWidth < 500;
   var messages = mobileMode ? [
-    { text: '',                              hold: 1000 },
-    { text: 'Happy',                         hold: 2000 },
-    { text: "Valentine's",                   hold: 3000 },
-    { text: 'day',                           hold: 3000 },
-    { text: 'I wanna<br>rock you',           hold: 5000 },
-    { text: "'til the<br>break of day",      hold: 5000 },
+    { text: '',                      hold: 1500 },
+    { text: 'Happy',                 hold: 3000, left: 10, top: 155 },
+    { text: "Valentine's",           hold: 3500, left: 16, top: 161 },
+    { text: 'day',                   hold: 3500, left: 22, top: 167 },
+    { text: 'I wanna rock you',      hold: 6000, left: 16, top: 161 },
+    { text: "'til the break of day", hold: 6000, left: 16, top: 161 },
   ] : [
-    { text: '',                              hold: 1000 },
-    { text: "Happy Valentine's Day",         hold: 5000 },
-    { text: 'I wanna rock you',              hold: 5000 },
-    { text: "'til the break of day",         hold: 5000 },
+    { text: '',                              hold: 1500 },
+    { text: "Happy Valentine's Day",         hold: 6000 },
+    { text: 'I wanna rock you',              hold: 6000 },
+    { text: "'til the break of day",         hold: 6000 },
   ];
   var msgEl = document.getElementById('msg-cycle');
   var msgIdx = 0;
@@ -854,6 +854,10 @@ function startCard() {
   function showMessage() {
     var msg = messages[msgIdx];
     msgEl.innerHTML = msg.text;
+    if (msg.left !== undefined) {
+      msgEl.style.left = msg.left + 'px';
+      msgEl.style.top = msg.top + 'px';
+    }
     msgEl.style.opacity = '1';
     // Hold, then fade out, then show next
     setTimeout(function() {
