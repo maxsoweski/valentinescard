@@ -856,75 +856,56 @@ function startCard() {
     }
 
     function runSequence() {
-      var els = [];
-      var t = 0;
+      var phrases = [
+        { words: [
+          { text: 'Happy',       left: 10, top: 148 },
+          { text: "Valentine's", left: 16, top: 162 },
+          { text: 'day',         left: 22, top: 176 },
+        ], wordDelay: 2500, holdAfter: 3500 },
+        { words: [
+          { text: 'I',     left: 10, top: 148 },
+          { text: 'wanna', left: 15, top: 160 },
+          { text: 'rock',  left: 20, top: 172 },
+          { text: 'you',   left: 25, top: 184 },
+        ], wordDelay: 2000, holdAfter: 3500 },
+        { words: [
+          { text: "'til",  left: 10, top: 148 },
+          { text: 'the',   left: 14, top: 159 },
+          { text: 'break', left: 18, top: 170 },
+          { text: 'of',    left: 22, top: 181 },
+          { text: 'day',   left: 26, top: 192 },
+        ], wordDelay: 1800, holdAfter: 3500 },
+      ];
 
-      t += 1500;
+      var t = 1500; // initial pause
 
-      // "Happy" fades in
-      setTimeout(function() {
-        var el = createMsgEl('Happy', 10, 155);
-        els.push(el);
-        setTimeout(function() { el.style.opacity = '1'; }, 50);
-      }, t);
-      t += 2500;
+      phrases.forEach(function(phrase) {
+        var els = [];
+        var phraseStart = t;
 
-      // "Valentine's" fades in (Happy stays)
-      setTimeout(function() {
-        var el = createMsgEl("Valentine's", 16, 161);
-        els.push(el);
-        setTimeout(function() { el.style.opacity = '1'; }, 50);
-      }, t);
-      t += 2500;
+        // Each word fades in one at a time
+        phrase.words.forEach(function(word, wi) {
+          setTimeout(function() {
+            var el = createMsgEl(word.text, word.left, word.top);
+            els.push(el);
+            setTimeout(function() { el.style.opacity = '1'; }, 50);
+          }, phraseStart + wi * phrase.wordDelay);
+        });
 
-      // "day" fades in (all three stay)
-      setTimeout(function() {
-        var el = createMsgEl('day', 22, 167);
-        els.push(el);
-        setTimeout(function() { el.style.opacity = '1'; }, 50);
-      }, t);
-      t += 3500;
-
-      // Fade all three out
-      setTimeout(function() {
-        els.forEach(function(e) { e.style.opacity = '0'; });
-      }, t);
-      t += 1500;
-
-      // "I wanna rock you"
-      setTimeout(function() {
-        els.forEach(function(e) { e.remove(); });
-        els = [];
-        var el = createMsgEl('I wanna rock you', 12, 158);
-        els.push(el);
-        setTimeout(function() { el.style.opacity = '1'; }, 50);
-      }, t);
-      t += 6000;
-
-      // Fade out
-      setTimeout(function() {
-        els.forEach(function(e) { e.style.opacity = '0'; });
-      }, t);
-      t += 1500;
-
-      // "'til the break of day"
-      setTimeout(function() {
-        els.forEach(function(e) { e.remove(); });
-        els = [];
-        var el = createMsgEl("'til the break of day", 12, 158);
-        els.push(el);
-        setTimeout(function() { el.style.opacity = '1'; }, 50);
-      }, t);
-      t += 6000;
-
-      // Fade out and loop
-      setTimeout(function() {
-        els.forEach(function(e) { e.style.opacity = '0'; });
+        // Hold after last word, then fade all out
+        var fadeTime = phraseStart + (phrase.words.length - 1) * phrase.wordDelay + phrase.holdAfter;
         setTimeout(function() {
-          els.forEach(function(e) { e.remove(); });
-          runSequence();
-        }, 1500);
-      }, t);
+          els.forEach(function(e) { e.style.opacity = '0'; });
+          setTimeout(function() {
+            els.forEach(function(e) { e.remove(); });
+          }, 1000);
+        }, fadeTime);
+
+        t = fadeTime + 1500; // gap before next phrase
+      });
+
+      // Loop
+      setTimeout(runSequence, t);
     }
 
     runSequence();
