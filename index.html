@@ -19,7 +19,7 @@
     #portrait-wrap {
       transform: scale(2) translate(22px, -7px);
     }
-    #msg-cycle {
+    #msg-cycle, .msg-word {
       position: absolute;
       left: 10px;
       top: 155px;
@@ -30,6 +30,11 @@
       margin-top: 0;
       color: #000000 !important;
       text-shadow: none !important;
+    }
+    .msg-word {
+      opacity: 0;
+      transition: opacity 1s ease;
+      pointer-events: none;
     }
   }
 
@@ -844,7 +849,8 @@ function startCard() {
       var el = document.createElement('div');
       el.className = 'msg-word';
       el.innerHTML = text;
-      el.style.cssText = 'position:absolute;left:'+left+'px;top:'+top+'px;width:55px;font-family:"Press Start 2P","Courier New",monospace;font-size:2.7px;line-height:1.8;text-align:center;color:#000;text-shadow:none;opacity:0;transition:opacity 1s ease;pointer-events:none;';
+      el.style.left = left + 'px';
+      el.style.top = top + 'px';
       card.appendChild(el);
       return el;
     }
