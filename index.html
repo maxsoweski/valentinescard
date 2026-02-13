@@ -833,44 +833,121 @@ function startCard() {
   // Start floating hearts
   setTimeout(startHearts, 1000);
 
-  // Message cycle — loop 3 phrases with variable timing
+  // Message sequence
   var mobileMode = window.innerWidth < 500;
-  var messages = mobileMode ? [
-    { text: '',                      hold: 1500 },
-    { text: 'Happy',                 hold: 3000, left: 10, top: 155 },
-    { text: "Valentine's",           hold: 3500, left: 16, top: 161 },
-    { text: 'day',                   hold: 3500, left: 22, top: 167 },
-    { text: 'I wanna rock you',      hold: 6000, left: 16, top: 161 },
-    { text: "'til the break of day", hold: 6000, left: 16, top: 161 },
-  ] : [
-    { text: '',                              hold: 1500 },
-    { text: "Happy Valentine's Day",         hold: 6000 },
-    { text: 'I wanna rock you',              hold: 6000 },
-    { text: "'til the break of day",         hold: 6000 },
-  ];
-  var msgEl = document.getElementById('msg-cycle');
-  var msgIdx = 0;
 
-  function showMessage() {
-    var msg = messages[msgIdx];
-    msgEl.innerHTML = msg.text;
-    if (msg.left !== undefined) {
-      msgEl.style.left = msg.left + 'px';
-      msgEl.style.top = msg.top + 'px';
+  if (mobileMode) {
+    // Mobile: build up "Happy Valentine's day" word by word, then phrases
+    var card = document.getElementById('card');
+
+    function createMsgEl(text, left, top) {
+      var el = document.createElement('div');
+      el.className = 'msg-word';
+      el.innerHTML = text;
+      el.style.cssText = 'position:absolute;left:'+left+'px;top:'+top+'px;width:55px;font-family:"Press Start 2P","Courier New",monospace;font-size:2.7px;line-height:1.8;text-align:center;color:#000;text-shadow:none;opacity:0;transition:opacity 1s ease;pointer-events:none;';
+      card.appendChild(el);
+      return el;
     }
-    msgEl.style.opacity = '1';
-    // Hold, then fade out, then show next
-    setTimeout(function() {
-      msgEl.style.opacity = '0';
-      setTimeout(function() {
-        msgIdx = (msgIdx + 1) % messages.length;
-        showMessage();
-      }, 1000); // 1s fade-out gap
-    }, msg.hold);
-  }
 
-  // Show first message immediately
-  showMessage();
+    function runSequence() {
+      var els = [];
+      var t = 0;
+
+      t += 1500;
+
+      // "Happy" fades in
+      setTimeout(function() {
+        var el = createMsgEl('Happy', 10, 155);
+        els.push(el);
+        setTimeout(function() { el.style.opacity = '1'; }, 50);
+      }, t);
+      t += 2500;
+
+      // "Valentine's" fades in (Happy stays)
+      setTimeout(function() {
+        var el = createMsgEl("Valentine's", 16, 161);
+        els.push(el);
+        setTimeout(function() { el.style.opacity = '1'; }, 50);
+      }, t);
+      t += 2500;
+
+      // "day" fades in (all three stay)
+      setTimeout(function() {
+        var el = createMsgEl('day', 22, 167);
+        els.push(el);
+        setTimeout(function() { el.style.opacity = '1'; }, 50);
+      }, t);
+      t += 3500;
+
+      // Fade all three out
+      setTimeout(function() {
+        els.forEach(function(e) { e.style.opacity = '0'; });
+      }, t);
+      t += 1500;
+
+      // "I wanna rock you"
+      setTimeout(function() {
+        els.forEach(function(e) { e.remove(); });
+        els = [];
+        var el = createMsgEl('I wanna rock you', 12, 158);
+        els.push(el);
+        setTimeout(function() { el.style.opacity = '1'; }, 50);
+      }, t);
+      t += 6000;
+
+      // Fade out
+      setTimeout(function() {
+        els.forEach(function(e) { e.style.opacity = '0'; });
+      }, t);
+      t += 1500;
+
+      // "'til the break of day"
+      setTimeout(function() {
+        els.forEach(function(e) { e.remove(); });
+        els = [];
+        var el = createMsgEl("'til the break of day", 12, 158);
+        els.push(el);
+        setTimeout(function() { el.style.opacity = '1'; }, 50);
+      }, t);
+      t += 6000;
+
+      // Fade out and loop
+      setTimeout(function() {
+        els.forEach(function(e) { e.style.opacity = '0'; });
+        setTimeout(function() {
+          els.forEach(function(e) { e.remove(); });
+          runSequence();
+        }, 1500);
+      }, t);
+    }
+
+    runSequence();
+  } else {
+    // Desktop: simple message cycle
+    var msgEl = document.getElementById('msg-cycle');
+    var desktopMsgs = [
+      { text: '',                          hold: 1500 },
+      { text: "Happy Valentine's Day",     hold: 6000 },
+      { text: 'I wanna rock you',          hold: 6000 },
+      { text: "'til the break of day",     hold: 6000 },
+    ];
+    var msgIdx = 0;
+
+    function showMessage() {
+      var msg = desktopMsgs[msgIdx];
+      msgEl.innerHTML = msg.text;
+      msgEl.style.opacity = '1';
+      setTimeout(function() {
+        msgEl.style.opacity = '0';
+        setTimeout(function() {
+          msgIdx = (msgIdx + 1) % desktopMsgs.length;
+          showMessage();
+        }, 1000);
+      }, msg.hold);
+    }
+
+    showMessage();
+  }
 }
 
 // ============================================================
